@@ -1,11 +1,11 @@
+import { useThrottleFn } from "ahooks"
 import { type MouseEvent, useRef, useState } from "react"
 import useClickOutside from "@/hook/useClickOutSide.ts"
 import { cn } from "@/utils/styles.ts"
 import styles from "./index.module.css"
-import { useThrottleFn } from "ahooks"
+import ToolbarSubMenu from "./ToolbarSubMenu"
 import type { ToolbarOption } from "./types"
 import { isMenuItemAction, isMenuItemWithChildren } from "./types"
-import ToolbarSubMenu from "./ToolbarSubMenu"
 
 export type { MenuItem, ToolbarOption } from "./types"
 

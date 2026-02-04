@@ -1,6 +1,6 @@
+import styles from "./index.module.css"
 import type { MenuItem } from "./types"
 import { isMenuItemAction, isMenuItemWithChildren } from "./types"
-import styles from "./index.module.css"
 
 interface ToolbarSubMenuProps {
   items: MenuItem[]
