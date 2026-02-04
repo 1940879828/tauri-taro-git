@@ -2,8 +2,8 @@ import "./App.css"
 
 function App() {
   return (
-    <main className="container flex-1 w-full h-full bg-gray-500">
-      <h1>Welcome to Tauri + React</h1>
+    <main className="flex-1 items-center justify-center w-full h-full bg-[#1e1e1e]">
+      <div className="text-[#bbb]">打开仓库</div>
     </main>
   )
 }

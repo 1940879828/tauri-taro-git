@@ -1,4 +1,5 @@
 .container {
+  display: flex;
   background: var(--background-1);
   user-select: none;
   align-items: center;
@@ -32,5 +33,82 @@
   top: 24px;
   background: var(--background-1);
   border: 1px solid var(--border-color-1);
-  padding: 0 4px;
+  z-index: var(--z-menu);
+}
+
+.menuItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  padding-right: 0;
+  cursor: default;
+  min-width: 150px;
+}
+
+.menuItemLabel {
+  flex: 1;
+}
+
+.arrowIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  background: url("./arrow.svg") center/cover no-repeat;
+}
+
+.menuItem:hover .arrowIcon,
+.subMenuItem:hover .arrowIcon {
+  background-image: url("./arrow_active.svg");
+}
+
+/* menuItem 悬停时显示 SubMenu */
+.menuItem .subMenu {
+  visibility: hidden;
+  opacity: 0;
+  min-width: 150px;
+}
+
+.menuItem:hover .subMenu {
+  visibility: visible;
+  opacity: 1;
+}
+
+.subMenu {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  min-width: 140px;
+  background: var(--background-1);
+  border: 1px solid var(--border-color-1);
+  z-index: var(--z-menu-sub);
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.subMenuItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  cursor: default;
+}
+
+.subMenuItemLabel {
+  flex: 1;
+}
+
+/* subMenuItem 悬停时显示次级 SubMenu */
+.subMenuItem .subMenu {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.subMenuItem:hover .subMenu {
+  visibility: visible;
+  opacity: 1;
+}
+
+.menuItem:hover,
+.subMenuItem:hover {
+  background: var(--background-2);
 }

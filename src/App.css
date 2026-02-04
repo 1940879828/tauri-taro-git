@@ -19,6 +19,9 @@
   --background-2: #4b6eaf;
   --color-1: #bbb;
   --border-color-1: #515151;
+
+  --z-menu: 5;
+  --z-menu-sub: 10;
 }
 
 @media (prefers-color-scheme: dark) {

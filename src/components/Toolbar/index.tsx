@@ -1,115 +1,106 @@
-import { type MouseEvent, useMemo, useState } from "react"
+import { type MouseEvent, useRef, useState } from "react"
 import useClickOutside from "@/hook/useClickOutSide.ts"
 import { cn } from "@/utils/styles.ts"
 import styles from "./index.module.css"
+import { useThrottleFn } from "ahooks"
+import type { ToolbarOption } from "./types"
+import { isMenuItemAction, isMenuItemWithChildren } from "./types"
+import ToolbarSubMenu from "./ToolbarSubMenu"
 
-const OPTION_TYPES = {
-  FILE: "file",
-  EDIT: "edit"
-} as const
+export type { MenuItem, ToolbarOption } from "./types"
 
-type ValidOptionKey = (typeof OPTION_TYPES)[keyof typeof OPTION_TYPES]
-type ActiveOptionState = ValidOptionKey | ""
+interface ToolbarProps {
+  options: ToolbarOption[]
+}
 
-const Index = () => {
-  const [activeOption, setActiveOption] = useState<ActiveOptionState>("")
+const Toolbar = ({ options }: ToolbarProps) => {
+  const [activeOption, setActiveOption] = useState<string>("")
   const [menuPositionLeft, setMenuPositionLeft] = useState(0)
+
+  const activeOptionRef = useRef(activeOption)
+  const isMenuOpenRef = useRef(activeOption !== "")
+  activeOptionRef.current = activeOption
+  isMenuOpenRef.current = activeOption !== ""
 
   const isMenuOpen = activeOption !== ""
 
+  const validTypes = options.map((o) => o.type)
+
+  const isValidOptionType = (value: unknown): value is string =>
+    typeof value === "string" && validTypes.includes(value)
+
   const toolbarRef = useClickOutside<HTMLDivElement>(() => {
-    if (isMenuOpen) {
+    if (isMenuOpenRef.current) {
       setActiveOption("")
     }
   })
 
   const getOptionElement = (target: EventTarget): HTMLElement | null => {
     if (!(target instanceof HTMLElement)) return null
-    return target.closest(`.${styles.option}`) // 使用 closest 更健壮地查找父级选项
+    return target.closest(`.${styles.option}`)
   }
 
   const handleOptionsClick = (e: MouseEvent<HTMLDivElement>) => {
     const optionElement = getOptionElement(e.target)
     if (!optionElement) return
 
-    const type = optionElement.dataset.type as ActiveOptionState
+    const type = optionElement.dataset.type
+    if (!isValidOptionType(type)) return
 
-    // 如果点击的是当前已激活的选项，则关闭菜单
-    if (type && type === activeOption && isMenuOpen) {
+    if (type === activeOptionRef.current && isMenuOpenRef.current) {
       setActiveOption("")
       return
     }
 
-    // 否则，切换菜单状态并更新激活选项和位置
-    if (type) {
-      setActiveOption(type)
-      setMenuPositionLeft(optionElement.offsetLeft)
-    }
+    setActiveOption(type)
+    setMenuPositionLeft(optionElement.offsetLeft)
   }
 
   const handleOptionsEnter = (e: MouseEvent<HTMLDivElement>) => {
-    // 只有当菜单已打开时，才更新高亮和位置
-    if (!isMenuOpen) return
+    if (!isMenuOpenRef.current) return
 
     const optionElement = getOptionElement(e.target)
     if (!optionElement) return
 
-    const type = optionElement.dataset.type as ActiveOptionState
+    const type = optionElement.dataset.type
+    if (!isValidOptionType(type)) return
 
-    if (type && type !== activeOption) {
-      // 避免不必要的更新
+    if (type !== activeOptionRef.current) {
       setActiveOption(type)
       setMenuPositionLeft(optionElement.offsetLeft)
     }
   }
 
-  // 菜单项数据
-  const menuItems = useMemo(
-    () => ({
-      [OPTION_TYPES.FILE]: [
-        { label: "新建文件", action: () => console.log("新建文件") },
-        { label: "打开文件", action: () => console.log("打开文件") }
-      ],
-      [OPTION_TYPES.EDIT]: [
-        { label: "撤销", action: () => console.log("撤销") },
-        { label: "重做", action: () => console.log("重做") }
-      ]
-    }),
-    []
+  const { run: ThrottleHandleOptionsEnter } = useThrottleFn(
+    handleOptionsEnter,
+    { wait: 50 }
   )
 
-  const currentMenuItems = activeOption ? menuItems[activeOption] : undefined
+  const currentOption = options.find((o) => o.type === activeOption)
+  const currentMenuItems = currentOption?.items
 
   return (
     <div className={styles.container} ref={toolbarRef}>
       <div
         className={styles.options}
         onClick={handleOptionsClick}
-        onMouseOver={handleOptionsEnter}
+        onMouseOver={ThrottleHandleOptionsEnter}
         role="menubar"
       >
-        <div
-          className={cn(
-            styles.option,
-            activeOption === OPTION_TYPES.FILE ? styles.active : ""
-          )}
-          data-type={OPTION_TYPES.FILE}
-          role="menuitem"
-          aria-haspopup="true"
-        >
-          文件
-        </div>
-        <div
-          className={cn(
-            styles.option,
-            activeOption === OPTION_TYPES.EDIT ? styles.active : ""
-          )}
-          data-type={OPTION_TYPES.EDIT}
-          role="menuitem"
-          aria-haspopup="true"
-        >
-          编辑
-        </div>
+        {options.map((opt) => (
+          <div
+            key={opt.type}
+            className={cn(
+              styles.option,
+              activeOption === opt.type ? styles.active : ""
+            )}
+            data-type={opt.type}
+            role="menuitem"
+            aria-haspopup="true"
+          >
+            {opt.label}
+          </div>
+        ))}
       </div>
       {isMenuOpen && currentMenuItems && (
         <div
@@ -119,13 +110,26 @@ const Index = () => {
         >
           {currentMenuItems.map((item) => (
             <div
-              key={item.label}
+              key={item.id}
               className={styles.menuItem}
-              onClick={item.action}
               role="menuitem"
               tabIndex={0}
             >
-              {item.label}
+              <span
+                className={styles.menuItemLabel}
+                onClick={isMenuItemAction(item) ? item.action : undefined}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && isMenuItemAction(item)) item.action()
+                }}
+              >
+                {item.label}
+              </span>
+              {isMenuItemWithChildren(item) && item.children.length > 0 ? (
+                <>
+                  <span className={styles.arrowIcon} aria-hidden />
+                  <ToolbarSubMenu items={item.children} />
+                </>
+              ) : null}
             </div>
           ))}
         </div>
@@ -134,4 +138,4 @@ const Index = () => {
   )
 }
 
-export default Index
+export default Toolbar
