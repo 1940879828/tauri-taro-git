@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "tauri-taro-git",
         "width": 800,
         "height": 600
