@@ -8,13 +8,13 @@
   height: 24px;
   font-size: 13px;
   color: var(--color-1);
+  border-bottom: 1px solid var(--border-color-1);
 }
 
 .options {
   display: flex;
   padding-left: 8px;
   flex-direction: row;
-  border-bottom: 1px solid var(--border-color-1);
 }
 
 .option {
