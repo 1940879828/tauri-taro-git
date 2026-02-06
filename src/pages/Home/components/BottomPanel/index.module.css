@@ -1,0 +1,6 @@
+.container {
+  background: var(--background-1);
+  height: 100%;
+  color: #bbb;
+  border-top: 1px solid var(--border-color-2);
+}

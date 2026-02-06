@@ -15,7 +15,8 @@
         "label": "main",
         "title": "tauri-taro-git",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "backgroundColor": "#282828"
       }
     ],
     "security": {
