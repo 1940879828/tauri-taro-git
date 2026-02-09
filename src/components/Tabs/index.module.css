@@ -1,0 +1,55 @@
+.tabs {
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid var(--border-color-2);
+}
+
+.tab {
+  position: relative;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--color-1);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* focused 状态 */
+.focused {
+  background: var(--background-3);
+}
+
+.focused .tab:hover {
+  background: var(--background-4);
+}
+
+.focused .tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 1.5px;
+  background: var(--background-2);
+}
+
+/* unfocused 状态 */
+.unfocused {
+  background: var(--background-1);
+}
+
+.unfocused .tab:hover {
+  background: var(--background-5);
+}
+
+.unfocused .tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 1.5px;
+  background: var(--background-6);
+}
