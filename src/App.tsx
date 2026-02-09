@@ -1,15 +1,16 @@
 import "./App.css"
 import { useNavigate } from "react-router"
 import { useRepositoriesStore } from "./stores/useRepositoriesStore"
+import { setWindowTitle } from "@/utils/window"
 
 function App() {
   const navigate = useNavigate()
   const { openRepo } = useRepositoriesStore()
 
   const handleOpenRepo = async () => {
-    console.log("handleOpenRepo")
     const info = await openRepo()
     if (info) {
+      setWindowTitle(info)
       navigate("/home", { replace: true })
     }
   }

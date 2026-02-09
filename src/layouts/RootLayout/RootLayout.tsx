@@ -2,6 +2,7 @@ import { Outlet, useNavigate } from "react-router"
 import type { ToolbarOption } from "@/components/Toolbar"
 import Toolbar from "@/components/Toolbar"
 import { useRepositoriesStore } from "@/stores/useRepositoriesStore"
+import { setWindowTitle } from "@/utils/window"
 import styles from "./index.module.css"
 
 const RootLayout = () => {
@@ -11,6 +12,7 @@ const RootLayout = () => {
   const handleOpenRepo = async () => {
     const info = await openRepo()
     if (info) {
+      setWindowTitle(info)
       navigate("/home", { replace: true })
     }
   }
