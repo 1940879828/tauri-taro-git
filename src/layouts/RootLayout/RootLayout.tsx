@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import { Outlet, useNavigate } from "react-router"
 import type { ToolbarOption } from "@/components/Toolbar"
 import Toolbar from "@/components/Toolbar"
@@ -9,8 +9,23 @@ import styles from "./index.module.css"
 
 const RootLayout = () => {
   const navigate = useNavigate()
-  const { openRepo, openRepoByPath, closeRepo, recentRepos } = useRepositoriesStore()
+  const { currentRepo, openRepo, openRepoByPath, closeRepo, recentRepos } = useRepositoriesStore()
   const toolbarRef = useRef<ToolbarRef>(null)
+
+  // 应用启动时，检测并还原持久化的仓库
+  useEffect(() => {
+    if (currentRepo) {
+      openRepoByPath(currentRepo.path).then((info) => {
+        if (info) {
+          setWindowTitle(info)
+          navigate("/home", { replace: true })
+        } else {
+          closeRepo()
+          navigate("/", { replace: true })
+        }
+      })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenRepo = async () => {
     toolbarRef.current?.closeMenu()
