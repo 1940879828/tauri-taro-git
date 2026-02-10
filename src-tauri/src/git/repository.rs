@@ -29,3 +29,12 @@ pub fn open_repo(repo_path: &str) -> Result<RepoInfo, GitError> {
         is_bare: repo.is_bare(),
     })
 }
+
+pub fn get_repo(repo_path: &str) -> Result<Repository, GitError> {
+    let path = Path::new(repo_path).canonicalize().map_err(|e| GitError {
+        message: format!("路径无效: {}", e),
+    })?;
+    Repository::open(&path).map_err(|e| GitError {
+        message: e.message().to_string(),
+    })
+}
