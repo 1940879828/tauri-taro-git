@@ -11,7 +11,8 @@ export function setWindowTitle(repo?: RepoInfo | null) {
   if (repo) {
     const repoName = repo.path.split(/[/\\]/).pop() || repo.path
     console.log(`${APP_TITLE}: ${repoName}`)
-    getCurrentWindow().setTitle(`Store: ${repoName}`)
+    const cleanPath = repo.path.replace(/^\\\\\?\\/, "")
+    getCurrentWindow().setTitle(`${APP_TITLE} - ${cleanPath}`)
   } else {
     getCurrentWindow().setTitle(APP_TITLE)
   }

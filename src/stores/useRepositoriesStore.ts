@@ -3,6 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog"
 import { useLocalStorageState } from "ahooks"
 import { useState } from "react"
 import { localStorageKey } from "@/constant/localStorageKey"
+import { setWindowTitle } from "@/utils/window"
 
 // 仓库信息类型（与 Rust 后端返回一致）
 export interface RepoInfo {
@@ -78,15 +79,49 @@ export function useRepositoriesStore() {
     }
   }
 
-  // 关闭当前仓库
-  const closeRepo = () => {
-    setCurrentRepo(null)
+  // 通过路径直接打开仓库
+  const openRepoByPath = async (repoPath: string) => {
+    setLoading(true)
     setError(null)
+
+    try {
+      const info = await invoke<RepoInfo>("git_open", { repoPath })
+      setCurrentRepo(info)
+
+      const repoName = info.path.split(/[/\\]/).pop() || info.path
+      const newRecord: RepoRecord = {
+        path: info.path,
+        name: repoName,
+        lastOpened: Date.now()
+      }
+
+      setRecentRepos((prev = []) => {
+        const filtered = prev.filter((r) => r.path !== info.path)
+        return [newRecord, ...filtered].slice(0, 20)
+      })
+
+      return info
+    } catch (e) {
+      console.error("打开仓库出错:", e)
+      const message = e instanceof Error ? e.message : String(e)
+      setError(message)
+      // 打开失败，从最近仓库列表中移除
+      removeFromRecent(repoPath)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // 从最近列表移除
   const removeFromRecent = (repoPath: string) => {
     setRecentRepos((prev = []) => prev.filter((r) => r.path !== repoPath))
+  }
+
+  // 关闭当前仓库
+  const closeRepo = () => {
+    setCurrentRepo(null)
+    setError(null)
+    setWindowTitle(null)
   }
 
   // 清除所有缓存
@@ -105,6 +140,7 @@ export function useRepositoriesStore() {
 
     // 方法
     openRepo,
+    openRepoByPath,
     closeRepo,
     removeFromRecent,
     clearCache

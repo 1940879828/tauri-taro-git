@@ -9,12 +9,21 @@ import styles from "./index.module.css"
 
 const RootLayout = () => {
   const navigate = useNavigate()
-  const { openRepo, closeRepo } = useRepositoriesStore()
+  const { openRepo, openRepoByPath, closeRepo, recentRepos } = useRepositoriesStore()
   const toolbarRef = useRef<ToolbarRef>(null)
 
   const handleOpenRepo = async () => {
     toolbarRef.current?.closeMenu()
     const info = await openRepo()
+    if (info) {
+      setWindowTitle(info)
+      navigate("/home", { replace: true })
+    }
+  }
+
+  const handleOpenRecentRepo = async (repoPath: string) => {
+    toolbarRef.current?.closeMenu()
+    const info = await openRepoByPath(repoPath)
     if (info) {
       setWindowTitle(info)
       navigate("/home", { replace: true })
@@ -40,18 +49,11 @@ const RootLayout = () => {
         {
           id: "file-2",
           label: "最近的仓库",
-          children: [
-            {
-              id: "file-2-1",
-              label: "仓库1",
-              action: () => console.log("打开仓库1")
-            },
-            {
-              id: "file-2-2",
-              label: "仓库2",
-              action: () => console.log("打开仓库2")
-            }
-          ]
+          children: recentRepos.map((repo) => ({
+            id: `recent-${repo.path}`,
+            label: repo.name,
+            action: () => handleOpenRecentRepo(repo.path)
+          }))
         },
         {
           id: "file-3",
