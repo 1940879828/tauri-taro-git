@@ -46,40 +46,78 @@ const SplitPane: React.FC<SplitPaneProps> = ({
   const cursorStyle = isHorizontal ? "ew-resize" : "ns-resize"
   const sizeProp = isHorizontal ? "width" : "height"
 
+  // 根据容器尺寸和 initialSizes 计算面板像素大小
+  const calcInitialSizes = useCallback(
+    (containerSize: number): number[] => {
+      const sizes: number[] = []
+      let assignedTotal = 0
+      let unassignedCount = 0
+
+      for (let i = 0; i < childCount; i++) {
+        if (initialSizes && initialSizes[i] !== undefined) {
+          const px = parseSizeToPx(initialSizes[i], containerSize)
+          sizes.push(px)
+          assignedTotal += px
+        } else {
+          sizes.push(-1)
+          unassignedCount++
+        }
+      }
+
+      const remaining = containerSize - assignedTotal
+      const eachRemaining = unassignedCount > 0 ? remaining / unassignedCount : 0
+      for (let i = 0; i < childCount; i++) {
+        if (sizes[i] === -1) {
+          sizes[i] = Math.max(eachRemaining, minSize)
+        }
+      }
+      return sizes
+    },
+    [childCount, initialSizes, minSize]
+  )
+
   // 初始化：根据容器实际尺寸计算每个面板的像素大小
   useEffect(() => {
     if (!containerRef.current || paneSizes !== null) return
-
     const containerRect = containerRef.current.getBoundingClientRect()
     const containerSize = isHorizontal ? containerRect.width : containerRect.height
+    setPaneSizes(calcInitialSizes(containerSize))
+  }, [isHorizontal, paneSizes, calcInitialSizes])
 
-    const sizes: number[] = []
-    let assignedTotal = 0
-    let unassignedCount = 0
+  // 监听容器尺寸变化，按比例重新分配面板大小
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
 
-    // 第一遍：计算已指定大小的面板
-    for (let i = 0; i < childCount; i++) {
-      if (initialSizes && initialSizes[i] !== undefined) {
-        const px = parseSizeToPx(initialSizes[i], containerSize)
-        sizes.push(px)
-        assignedTotal += px
-      } else {
-        sizes.push(-1) // 标记为未分配
-        unassignedCount++
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const newContainerSize = isHorizontal
+          ? entry.contentRect.width
+          : entry.contentRect.height
+
+        setPaneSizes((prev) => {
+          if (!prev || newContainerSize <= 0) return prev
+          const oldTotal = prev.reduce((sum, s) => sum + s, 0)
+          if (oldTotal <= 0) return prev
+
+          // 按比例缩放各面板
+          const scale = newContainerSize / oldTotal
+          const newSizes = prev.map((s) => Math.max(s * scale, minSize))
+
+          // 修正误差，确保总和等于容器大小
+          const newTotal = newSizes.reduce((sum, s) => sum + s, 0)
+          if (newTotal !== newContainerSize && newSizes.length > 0) {
+            newSizes[newSizes.length - 1] += newContainerSize - newTotal
+          }
+
+          return newSizes
+        })
       }
-    }
+    })
 
-    // 第二遍：未指定的面板平均分配剩余空间
-    const remaining = containerSize - assignedTotal
-    const eachRemaining = unassignedCount > 0 ? remaining / unassignedCount : 0
-    for (let i = 0; i < childCount; i++) {
-      if (sizes[i] === -1) {
-        sizes[i] = Math.max(eachRemaining, minSize)
-      }
-    }
-
-    setPaneSizes(sizes)
-  }, [childCount, initialSizes, isHorizontal, minSize, paneSizes])
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [isHorizontal, minSize])
 
   // 开始拖拽
   const handleMouseDown = (index: number) => (e: React.MouseEvent) => {

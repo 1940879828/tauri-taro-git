@@ -5,16 +5,14 @@ import RightEditor from "@/pages/Home/components/RightEditor"
 
 const Home = () => {
   return (
-    <div className="h-full">
+    <div className="h-full relative">
       <SplitPane
         direction="vertical"
-        initialSize="30%"
         minSize={100}
         splitterSize={10}
       >
         <SplitPane
           direction="horizontal"
-          initialSize="30%"
           minSize={100}
           splitterSize={10}
         >
