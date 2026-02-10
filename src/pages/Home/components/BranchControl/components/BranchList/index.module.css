@@ -1,0 +1,66 @@
+.container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  user-select: none;
+  font-size: 12px;
+  border-right: 1px solid var(--border-color-2);
+}
+
+.treeNode {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding-right: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.treeNode:hover {
+  background-color: var(--background-7);
+}
+
+.treeNode.active {
+  background-color: var(--background-8);
+}
+
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+  font-size: 10px;
+  transform: rotate(-90deg);
+}
+
+.arrow.expanded {
+  transform: rotate(0deg);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-right: 4px;
+  font-size: 12px;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.arrow img,
+.icon img {
+  width: 100%;
+  height: 100%;
+}

@@ -4,6 +4,7 @@ import { useLocalStorageState } from "ahooks"
 import { useState } from "react"
 import { localStorageKey } from "@/constant/localStorageKey"
 import { setWindowTitle } from "@/utils/window"
+import { useBranchStore } from "./useBanchStore"
 
 // 仓库信息类型（与 Rust 后端返回一致）
 export interface RepoInfo {
@@ -39,6 +40,7 @@ export function useRepositoriesStore() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { getBranch, clearBranch } = useBranchStore()
 
   const openRepo = async () => {
     console.log("1. openRepo 开始执行") // 👈 加这里
@@ -75,9 +77,12 @@ export function useRepositoriesStore() {
         return [newRecord, ...filtered].slice(0, 20) // 最多保留 20 个
       })
 
+      // 获取分支信息
+      await getBranch(info.path, info.current_branch)
+
       return info
     } catch (e) {
-      console.error("出错了:", e) // 👈 重点！把错误打出来
+      console.error("出错了:", e)
       const message = e instanceof Error ? e.message : String(e)
       setError(message)
     } finally {
@@ -107,6 +112,9 @@ export function useRepositoriesStore() {
         return [newRecord, ...filtered].slice(0, 20)
       })
 
+      // 获取分支信息
+      await getBranch(info.path, info.current_branch)
+
       return info
     } catch (e) {
       console.error("打开仓库出错:", e)
@@ -129,6 +137,7 @@ export function useRepositoriesStore() {
     setCurrentRepo(null)
     setError(null)
     setWindowTitle(null)
+    clearBranch()
   }
 
   // 清除所有缓存
