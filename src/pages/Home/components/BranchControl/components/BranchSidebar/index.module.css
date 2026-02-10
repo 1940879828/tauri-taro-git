@@ -1,0 +1,29 @@
+.container {
+  width: 30px;
+  height: 100%;
+  border-right: 1px solid var(--border-color-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 2px;
+  gap: 4px;
+}
+
+.item {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  border-radius: 2px;
+  transition: background-color 0.15s;
+}
+
+.item:hover:not(.disabled) {
+  background-color: var(--background-7);
+}
+
+.item.disabled {
+  cursor: default;
+}

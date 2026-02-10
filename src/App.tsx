@@ -1,7 +1,7 @@
 import "./App.css"
 import { useNavigate } from "react-router"
-import { useRepositoriesStore } from "./stores/useRepositoriesStore"
 import { setWindowTitle } from "@/utils/window"
+import { useRepositoriesStore } from "./stores/useRepositoriesStore"
 
 function App() {
   const navigate = useNavigate()

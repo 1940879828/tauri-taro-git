@@ -1,97 +1,144 @@
 import type React from "react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { Children, useCallback, useEffect, useRef, useState } from "react"
 
 /**
  * SplitPane 组件 Props 定义
+ * 支持 2 个或多个子元素，每个子元素可设置初始大小
  */
 interface SplitPaneProps {
-  children: [React.ReactNode, React.ReactNode] // 必须传入2个子元素
-  direction?: "horizontal" | "vertical" // 布局方向
-  initialSize?: number | string // 初始大小 (px数字, "px"字符串, "%"字符串)
-  minSize?: number // 最小尺寸 (px)
-  splitterSize?: number // 可拖动区域的大小 (px)，默认 1px
+  children: React.ReactNode
+  direction?: "horizontal" | "vertical"
+  /** 每个面板的初始大小（px 或 "%"），数组长度应与子元素数量一致，未指定的面板平均分配剩余空间 */
+  initialSizes?: (number | string)[]
+  minSize?: number
+  splitterSize?: number
+}
+
+/** 将初始大小（可能是百分比或像素）解析为像素值 */
+const parseSizeToPx = (size: number | string, containerSize: number): number => {
+  if (typeof size === "number") return size
+  if (size.endsWith("%")) return (parseFloat(size) / 100) * containerSize
+  return parseFloat(size)
 }
 
 const SplitPane: React.FC<SplitPaneProps> = ({
   children,
   direction = "horizontal",
-  initialSize = "50%",
+  initialSizes,
   minSize = 50,
-  splitterSize = 10 // 虽然看起来是线，但为了易于拖拽，默认热区可以设大一点，比如10px，视觉上可以是透明的
+  splitterSize = 10,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [paneSize, setPaneSize] = useState<string | number>(initialSize)
-  const [isDragging, setIsDragging] = useState(false)
+  const childArray = Children.toArray(children)
+  const childCount = childArray.length
 
-  // 布局方向相关的属性映射
+  // 所有面板大小用像素管理，初始化时需要容器尺寸，先用 null 表示未初始化
+  const [paneSizes, setPaneSizes] = useState<number[] | null>(null)
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
+  // 记录拖拽开始时的鼠标位置和面板尺寸快照
+  const dragStartRef = useRef<{
+    mousePos: number
+    sizes: number[]
+  } | null>(null)
+
   const isHorizontal = direction === "horizontal"
-  const sizeProp = isHorizontal ? "width" : "height"
   const clientAxis = isHorizontal ? "clientX" : "clientY"
   const cursorStyle = isHorizontal ? "ew-resize" : "ns-resize"
+  const sizeProp = isHorizontal ? "width" : "height"
 
-  // 将传入的 size 转换为 CSS 可用的字符串
-  const formatSize = (size: number | string) => {
-    if (typeof size === "number") return `${size}px`
-    return size
-  }
+  // 初始化：根据容器实际尺寸计算每个面板的像素大小
+  useEffect(() => {
+    if (!containerRef.current || paneSizes !== null) return
+
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const containerSize = isHorizontal ? containerRect.width : containerRect.height
+
+    const sizes: number[] = []
+    let assignedTotal = 0
+    let unassignedCount = 0
+
+    // 第一遍：计算已指定大小的面板
+    for (let i = 0; i < childCount; i++) {
+      if (initialSizes && initialSizes[i] !== undefined) {
+        const px = parseSizeToPx(initialSizes[i], containerSize)
+        sizes.push(px)
+        assignedTotal += px
+      } else {
+        sizes.push(-1) // 标记为未分配
+        unassignedCount++
+      }
+    }
+
+    // 第二遍：未指定的面板平均分配剩余空间
+    const remaining = containerSize - assignedTotal
+    const eachRemaining = unassignedCount > 0 ? remaining / unassignedCount : 0
+    for (let i = 0; i < childCount; i++) {
+      if (sizes[i] === -1) {
+        sizes[i] = Math.max(eachRemaining, minSize)
+      }
+    }
+
+    setPaneSizes(sizes)
+  }, [childCount, initialSizes, isHorizontal, minSize, paneSizes])
 
   // 开始拖拽
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (index: number) => (e: React.MouseEvent) => {
     e.preventDefault()
-    setIsDragging(true)
+    if (!paneSizes) return
+    setDraggingIndex(index)
+    const pos = isHorizontal ? e.clientX : e.clientY
+    dragStartRef.current = {
+      mousePos: pos,
+      sizes: [...paneSizes],
+    }
   }
 
-  // 拖拽逻辑 (绑定到 window 以防止鼠标移出区域失效)
+  // 拖拽逻辑：只调整分割线两侧的面板，差值互补
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!isDragging || !containerRef.current) return
+      if (draggingIndex === null || !dragStartRef.current || !paneSizes) return
 
-      const containerRect = containerRef.current.getBoundingClientRect()
-      const containerSize = isHorizontal
-        ? containerRect.width
-        : containerRect.height
-      const containerStart = isHorizontal
-        ? containerRect.left
-        : containerRect.top
+      const { mousePos: startPos, sizes: startSizes } = dragStartRef.current
+      const currentPos = e[clientAxis]
+      const delta = currentPos - startPos
 
-      // 计算鼠标相对于容器的位置
-      let newSizePx = e[clientAxis] - containerStart
+      const leftIndex = draggingIndex
+      const rightIndex = draggingIndex + 1
 
-      // 限制最小尺寸 (Pane 1)
-      if (newSizePx < minSize) {
-        newSizePx = minSize
+      let newLeft = startSizes[leftIndex] + delta
+      let newRight = startSizes[rightIndex] - delta
+
+      // 限制最小尺寸
+      if (newLeft < minSize) {
+        newLeft = minSize
+        newRight = startSizes[leftIndex] + startSizes[rightIndex] - minSize
+      }
+      if (newRight < minSize) {
+        newRight = minSize
+        newLeft = startSizes[leftIndex] + startSizes[rightIndex] - minSize
       }
 
-      // 限制最大尺寸 (Pane 2 也要保留 minSize)
-      if (newSizePx > containerSize - minSize) {
-        newSizePx = containerSize - minSize
-      }
-
-      // 如果初始单位是百分比，则转换回百分比，否则保持像素
-      const isPercentage =
-        typeof paneSize === "string" && paneSize.endsWith("%")
-
-      if (isPercentage) {
-        const newSizePercent = (newSizePx / containerSize) * 100
-        setPaneSize(`${newSizePercent.toFixed(2)}%`)
-      } else {
-        setPaneSize(newSizePx)
-      }
+      setPaneSizes((prev) => {
+        if (!prev) return prev
+        const next = [...prev]
+        next[leftIndex] = newLeft
+        next[rightIndex] = newRight
+        return next
+      })
     },
-    [isDragging, isHorizontal, minSize, paneSize, clientAxis]
+    [draggingIndex, paneSizes, minSize, clientAxis]
   )
 
-  // 停止拖拽
   const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
+    setDraggingIndex(null)
+    dragStartRef.current = null
   }, [])
 
   // 全局事件监听
   useEffect(() => {
-    if (isDragging) {
+    if (draggingIndex !== null) {
       window.addEventListener("mousemove", handleMouseMove)
       window.addEventListener("mouseup", handleMouseUp)
-      // 拖拽时禁用 body 的 user-select 防止文字反白
       document.body.style.userSelect = "none"
       document.body.style.cursor = cursorStyle
     } else {
@@ -105,7 +152,58 @@ const SplitPane: React.FC<SplitPaneProps> = ({
       window.removeEventListener("mousemove", handleMouseMove)
       window.removeEventListener("mouseup", handleMouseUp)
     }
-  }, [isDragging, handleMouseMove, handleMouseUp, cursorStyle])
+  }, [draggingIndex, handleMouseMove, handleMouseUp, cursorStyle])
+
+  // 计算分割线位置：累加前面面板的像素值
+  const getSplitterPosition = (index: number): number => {
+    if (!paneSizes) return 0
+    let pos = 0
+    for (let i = 0; i <= index; i++) {
+      pos += paneSizes[i]
+    }
+    return pos
+  }
+
+  // 未初始化时用 initialSizes 做 SSR/首帧渲染
+  if (!paneSizes) {
+    return (
+      <div
+        ref={containerRef}
+        style={{
+          display: "flex",
+          flexDirection: isHorizontal ? "row" : "column",
+          width: "100%",
+          height: "100%",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {childArray.map((child, index) => {
+          const hasInitial = initialSizes && initialSizes[index] !== undefined
+          const sizeValue = hasInitial
+            ? typeof initialSizes![index] === "number"
+              ? `${initialSizes![index]}px`
+              : initialSizes![index]
+            : undefined
+
+          return (
+            <div
+              key={index}
+              style={{
+                ...(hasInitial
+                  ? { [sizeProp]: sizeValue, flexShrink: 0 }
+                  : { flex: 1 }),
+                overflow: "auto",
+                position: "relative",
+              }}
+            >
+              {child}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <div
@@ -115,55 +213,42 @@ const SplitPane: React.FC<SplitPaneProps> = ({
         flexDirection: isHorizontal ? "row" : "column",
         width: "100%",
         height: "100%",
-        position: "relative", // 为了让分割线 absolute 定位
-        overflow: "hidden"
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* 区域 1: 受控大小 */}
-      <div
-        style={{
-          [sizeProp]: formatSize(paneSize),
-          flexShrink: 0, // 防止被压缩
-          overflow: "auto",
-          position: "relative"
-        }}
-      >
-        {children[0]}
-      </div>
+      {childArray.map((child, index) => (
+        <div
+          key={index}
+          style={{
+            [sizeProp]: `${paneSizes[index]}px`,
+            flexShrink: 0,
+            overflow: "auto",
+            position: "relative",
+          }}
+        >
+          {child}
+        </div>
+      ))}
 
-      {/* 分割线 (Splitter) - 覆盖层 */}
-      <div
-        onMouseDown={handleMouseDown}
-        style={{
-          position: "absolute",
-          zIndex: 1000, // 确保在最上层
-          // 动态定位：让它跟随 Pane 1 的边缘
-          [isHorizontal ? "left" : "top"]: formatSize(paneSize),
-          // 尺寸设置
-          [isHorizontal ? "width" : "height"]: `${splitterSize}px`,
-          [isHorizontal ? "height" : "width"]: "100%",
-          // 核心：通过 transform 居中对齐到分割线，使其不占位但能被点中
-          transform: isHorizontal ? "translateX(-50%)" : "translateY(-50%)",
-          cursor: cursorStyle,
-          // 视觉上透明 (或者为了调试可以加背景色)
-          backgroundColor: "transparent",
-          // 如果你想看到一条细线作为视觉提示，可以取消下面这行的注释：
-          // borderLeft: isHorizontal ? '1px solid rgba(0,0,0,0.1)' : 'none',
-          // borderTop: !isHorizontal ? '1px solid rgba(0,0,0,0.1)' : 'none',
-          touchAction: "none" // 优化触摸设备
-        }}
-      />
-
-      {/* 区域 2: 自动填充剩余空间 */}
-      <div
-        style={{
-          flex: 1,
-          overflow: "auto",
-          position: "relative"
-        }}
-      >
-        {children[1]}
-      </div>
+      {/* 分割线：在第 i 个和第 i+1 个面板之间 */}
+      {Array.from({ length: childCount - 1 }, (_, index) => (
+        <div
+          key={`splitter-${index}`}
+          onMouseDown={handleMouseDown(index)}
+          style={{
+            position: "absolute",
+            zIndex: 1000,
+            [isHorizontal ? "left" : "top"]: `${getSplitterPosition(index)}px`,
+            [isHorizontal ? "width" : "height"]: `${splitterSize}px`,
+            [isHorizontal ? "height" : "width"]: "100%",
+            transform: isHorizontal ? "translateX(-50%)" : "translateY(-50%)",
+            cursor: cursorStyle,
+            backgroundColor: "transparent",
+            touchAction: "none",
+          }}
+        />
+      ))}
     </div>
   )
 }

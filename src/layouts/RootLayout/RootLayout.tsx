@@ -1,15 +1,21 @@
 import { useEffect, useRef } from "react"
 import { Outlet, useNavigate } from "react-router"
-import type { ToolbarOption } from "@/components/Toolbar"
+import type { ToolbarOption, ToolbarRef } from "@/components/Toolbar"
 import Toolbar from "@/components/Toolbar"
-import type { ToolbarRef } from "@/components/Toolbar"
 import { useRepositoriesStore } from "@/stores/useRepositoriesStore"
 import { setWindowTitle } from "@/utils/window"
 import styles from "./index.module.css"
 
 const RootLayout = () => {
   const navigate = useNavigate()
-  const { currentRepo, openRepo, openRepoByPath, closeRepo, clearCache, recentRepos } = useRepositoriesStore()
+  const {
+    currentRepo,
+    openRepo,
+    openRepoByPath,
+    closeRepo,
+    clearCache,
+    recentRepos
+  } = useRepositoriesStore()
   const toolbarRef = useRef<ToolbarRef>(null)
 
   // 应用启动时，检测并还原持久化的仓库

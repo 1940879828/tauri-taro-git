@@ -10,11 +10,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [react({
-    babel: {
-      plugins: ['babel-plugin-react-compiler']
-    }
-  }), tailwindcss()],
+  plugins: [
+    react({
+      babel: {
+        plugins: ["babel-plugin-react-compiler"]
+      }
+    }),
+    tailwindcss()
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src")

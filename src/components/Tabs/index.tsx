@@ -14,9 +14,17 @@ interface TabsProps {
   focused?: boolean
 }
 
-const Tabs: React.FC<TabsProps> = ({ items, activeKey, onChange, prefix, focused = true }) => {
+const Tabs: React.FC<TabsProps> = ({
+  items,
+  activeKey,
+  onChange,
+  prefix,
+  focused = true
+}) => {
   return (
-    <div className={`${styles.tabs} ${focused ? styles.focused : styles.unfocused}`}>
+    <div
+      className={`${styles.tabs} ${focused ? styles.focused : styles.unfocused}`}
+    >
       {prefix}
       {items.map((item) => (
         <div
