@@ -1,5 +1,5 @@
 import { useThrottleFn } from "ahooks"
-import { type MouseEvent, useRef, useState } from "react"
+import { type MouseEvent, forwardRef, useImperativeHandle, useRef, useState } from "react"
 import useClickOutside from "@/hook/useClickOutSide.ts"
 import { cn } from "@/utils/styles.ts"
 import styles from "./index.module.css"
@@ -9,11 +9,15 @@ import { isMenuItemAction, isMenuItemWithChildren } from "./types"
 
 export type { MenuItem, ToolbarOption } from "./types"
 
+export interface ToolbarRef {
+  closeMenu: () => void
+}
+
 interface ToolbarProps {
   options: ToolbarOption[]
 }
 
-const Toolbar = ({ options }: ToolbarProps) => {
+const Toolbar = forwardRef<ToolbarRef, ToolbarProps>(({ options }, ref) => {
   const [activeOption, setActiveOption] = useState<string>("")
   const [menuPositionLeft, setMenuPositionLeft] = useState(0)
 
@@ -21,6 +25,10 @@ const Toolbar = ({ options }: ToolbarProps) => {
   const isMenuOpenRef = useRef(activeOption !== "")
   activeOptionRef.current = activeOption
   isMenuOpenRef.current = activeOption !== ""
+
+  useImperativeHandle(ref, () => ({
+    closeMenu: () => setActiveOption("")
+  }))
 
   const isMenuOpen = activeOption !== ""
 
@@ -136,6 +144,8 @@ const Toolbar = ({ options }: ToolbarProps) => {
       )}
     </div>
   )
-}
+})
+
+Toolbar.displayName = "Toolbar"
 
 export default Toolbar

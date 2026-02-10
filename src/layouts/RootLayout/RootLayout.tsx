@@ -1,20 +1,30 @@
+import { useRef } from "react"
 import { Outlet, useNavigate } from "react-router"
 import type { ToolbarOption } from "@/components/Toolbar"
 import Toolbar from "@/components/Toolbar"
+import type { ToolbarRef } from "@/components/Toolbar"
 import { useRepositoriesStore } from "@/stores/useRepositoriesStore"
 import { setWindowTitle } from "@/utils/window"
 import styles from "./index.module.css"
 
 const RootLayout = () => {
   const navigate = useNavigate()
-  const { openRepo } = useRepositoriesStore()
+  const { openRepo, closeRepo } = useRepositoriesStore()
+  const toolbarRef = useRef<ToolbarRef>(null)
 
   const handleOpenRepo = async () => {
+    toolbarRef.current?.closeMenu()
     const info = await openRepo()
     if (info) {
       setWindowTitle(info)
       navigate("/home", { replace: true })
     }
+  }
+
+  const handleCloseRepo = () => {
+    closeRepo()
+    navigate("/", { replace: true })
+    toolbarRef.current?.closeMenu()
   }
 
   const options: ToolbarOption[] = [
@@ -42,6 +52,11 @@ const RootLayout = () => {
               action: () => console.log("打开仓库2")
             }
           ]
+        },
+        {
+          id: "file-3",
+          label: "关闭仓库",
+          action: handleCloseRepo
         }
       ]
     }
@@ -49,7 +64,7 @@ const RootLayout = () => {
 
   return (
     <div className={styles.container}>
-      <Toolbar options={options} />
+      <Toolbar ref={toolbarRef} options={options} />
       <div className={styles.content}>
         <Outlet />
       </div>
