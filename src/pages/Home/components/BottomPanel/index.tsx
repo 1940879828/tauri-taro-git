@@ -3,6 +3,7 @@ import Tabs from "@/components/Tabs"
 import useClickInside from "@/hook/useClickInside"
 import useClickOutside from "@/hook/useClickOutSide"
 import styles from "./index.module.css"
+import BranchControl from "@/pages/Home/components/BranchControl";
 
 const BottomPanel = () => {
   const [activeTabKey, setActiveTabKey] = useState("home")
@@ -25,7 +26,7 @@ const BottomPanel = () => {
 
   const tabs = [
     {
-      label: "日志",
+      label: "分支",
       key: "home"
     },
     {
@@ -33,6 +34,18 @@ const BottomPanel = () => {
       key: "category"
     }
   ]
+
+  const renderTabContent = () => {
+    switch (activeTabKey) {
+      case "home":
+        return <BranchControl />
+      case "category":
+        return <div>控制台</div>
+      default:
+        return null
+    }
+  }
+
   return (
     <div ref={mergedRef} className={styles.container}>
       <Tabs
@@ -47,7 +60,7 @@ const BottomPanel = () => {
         focused={focusBottomContent}
       />
       <div className={styles.content}>
-
+        {renderTabContent()}
       </div>
     </div>
   )
