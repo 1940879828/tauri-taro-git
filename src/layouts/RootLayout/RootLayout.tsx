@@ -9,7 +9,7 @@ import styles from "./index.module.css"
 
 const RootLayout = () => {
   const navigate = useNavigate()
-  const { currentRepo, openRepo, openRepoByPath, closeRepo, recentRepos } = useRepositoriesStore()
+  const { currentRepo, openRepo, openRepoByPath, closeRepo, clearCache, recentRepos } = useRepositoriesStore()
   const toolbarRef = useRef<ToolbarRef>(null)
 
   // 应用启动时，检测并还原持久化的仓库
@@ -45,6 +45,13 @@ const RootLayout = () => {
     }
   }
 
+  const hanldeClearCache = () => {
+    clearCache()
+    setWindowTitle(null)
+    navigate("/", { replace: true })
+    toolbarRef.current?.closeMenu()
+  }
+
   const handleCloseRepo = () => {
     closeRepo()
     navigate("/", { replace: true })
@@ -59,7 +66,7 @@ const RootLayout = () => {
         {
           id: "file-1",
           label: "打开仓库",
-          action: handleOpenRepo
+          action: () => handleOpenRepo()
         },
         {
           id: "file-2",
@@ -73,7 +80,12 @@ const RootLayout = () => {
         {
           id: "file-3",
           label: "关闭仓库",
-          action: handleCloseRepo
+          action: () => handleCloseRepo()
+        },
+        {
+          id: "file-4",
+          label: "使缓存失效...",
+          action: () => hanldeClearCache()
         }
       ]
     }

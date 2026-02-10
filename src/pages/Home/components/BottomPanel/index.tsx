@@ -46,7 +46,9 @@ const BottomPanel = () => {
         onChange={setActiveTabKey}
         focused={focusBottomContent}
       />
-      <div className={styles.content}>content</div>
+      <div className={styles.content}>
+
+      </div>
     </div>
   )
 }

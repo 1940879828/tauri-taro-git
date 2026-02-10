@@ -19,6 +19,11 @@ export interface RepoRecord {
   lastOpened: number // 时间戳
 }
 
+// 如果路径以 .git 结尾，去掉 .git 取上一级目录
+function normalizeRepoPath(repoPath: string): string {
+  return repoPath.replace(/[/\\]\.git\/?$/, "")
+}
+
 export function useRepositoriesStore() {
   // 最近打开的仓库列表
   const [recentRepos, setRecentRepos] = useLocalStorageState<RepoRecord[]>(
@@ -52,7 +57,8 @@ export function useRepositoriesStore() {
         return
       }
       console.log("3. 对话框返回:", selected) // 👈 加这里
-      const info = await invoke<RepoInfo>("git_open", { repoPath: selected })
+      const rawInfo = await invoke<RepoInfo>("git_open", { repoPath: selected })
+      const info = { ...rawInfo, path: normalizeRepoPath(rawInfo.path) }
       // 更新当前仓库
       setCurrentRepo(info)
       // 更新最近打开列表（去重 + 置顶）
@@ -85,7 +91,8 @@ export function useRepositoriesStore() {
     setError(null)
 
     try {
-      const info = await invoke<RepoInfo>("git_open", { repoPath })
+      const rawInfo = await invoke<RepoInfo>("git_open", { repoPath })
+      const info = { ...rawInfo, path: normalizeRepoPath(rawInfo.path) }
       setCurrentRepo(info)
 
       const repoName = info.path.split(/[/\\]/).pop() || info.path
