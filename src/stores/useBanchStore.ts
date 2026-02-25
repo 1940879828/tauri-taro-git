@@ -9,6 +9,10 @@ export interface BranchInfo {
   currentBranch: string | null
 }
 
+interface RepoInfo {
+  current_branch: string | null
+}
+
 const defaultBranchInfo: BranchInfo = {
   localBranches: [],
   remoteBranches: [],
@@ -60,12 +64,16 @@ export function useBranchStore() {
     setError(null)
 
     try {
-      const checkedOutBranch = await invoke<string>("git_checkout_branch", {
+      await invoke<string>("git_checkout_branch", {
         repoPath,
         branchName,
       })
-      await getBranch(repoPath, checkedOutBranch)
-      return checkedOutBranch
+      console.log("签出分支", branchName)
+      // 重新读取仓库真实 HEAD，再刷新分支信息，确保 UI 与仓库状态一致
+      const repoInfo = await invoke<RepoInfo>("git_open", { repoPath })
+      const currentBranch = repoInfo.current_branch ?? null
+      await getBranch(repoPath, currentBranch)
+      return currentBranch ?? branchName
     } catch (e) {
       console.error("签出分支出错:", e)
       const message = e instanceof Error ? e.message : String(e)

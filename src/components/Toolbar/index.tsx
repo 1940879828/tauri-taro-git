@@ -132,6 +132,11 @@ const Toolbar = forwardRef<ToolbarRef, ToolbarProps>(({
           : undefined
       }
       onContextMenu={(e) => e.preventDefault()}
+      onPointerDown={(e) => {
+        if (contextMenuMode) {
+          e.stopPropagation()
+        }
+      }}
     >
       {!contextMenuMode && (
         <div
@@ -168,13 +173,13 @@ const Toolbar = forwardRef<ToolbarRef, ToolbarProps>(({
               className={styles.menuItem}
               role="menuitem"
               tabIndex={0}
+              onClick={isMenuItemAction(item) ? item.action : undefined}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && isMenuItemAction(item)) item.action()
+              }}
             >
               <span
                 className={styles.menuItemLabel}
-                onClick={isMenuItemAction(item) ? item.action : undefined}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && isMenuItemAction(item)) item.action()
-                }}
               >
                 {item.label}
               </span>

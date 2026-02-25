@@ -148,6 +148,7 @@ const BranchList = () => {
   }
 
   const handleCheckout = async () => {
+    console.log("handleCheckout", contextMenu.node, currentRepo)
     if (!contextMenu.node?.isBranch || !currentRepo?.path) {
       closeContextMenu()
       return
@@ -160,12 +161,10 @@ const BranchList = () => {
 
   useEffect(() => {
     const close = () => closeContextMenu()
-    window.addEventListener("pointerdown", close)
     window.addEventListener("scroll", close, true)
     window.addEventListener("keydown", close)
 
     return () => {
-      window.removeEventListener("pointerdown", close)
       window.removeEventListener("scroll", close, true)
       window.removeEventListener("keydown", close)
     }
