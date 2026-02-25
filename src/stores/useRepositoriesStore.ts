@@ -77,7 +77,8 @@ export function useRepositoriesStore() {
         return [newRecord, ...filtered].slice(0, 20) // 最多保留 20 个
       })
 
-      // 获取分支信息
+      // 打开仓库后强制刷新分支信息，避免沿用旧缓存
+      clearBranch()
       await getBranch(info.path, info.current_branch)
 
       return info
@@ -112,7 +113,8 @@ export function useRepositoriesStore() {
         return [newRecord, ...filtered].slice(0, 20)
       })
 
-      // 获取分支信息
+      // 打开仓库后强制刷新分支信息，避免沿用旧缓存
+      clearBranch()
       await getBranch(info.path, info.current_branch)
 
       return info

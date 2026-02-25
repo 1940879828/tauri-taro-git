@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core"
-import { useLocalStorageState } from "ahooks"
-import { useState } from "react"
+import { atom, useAtom } from "jotai"
+import { atomWithStorage } from "jotai/utils"
 import { localStorageKey } from "@/constant/localStorageKey"
 
 export interface BranchInfo {
@@ -9,20 +9,23 @@ export interface BranchInfo {
   currentBranch: string | null
 }
 
-export function useBranchStore() {
-  const [branchInfo, setBranchInfo] = useLocalStorageState<BranchInfo>(
-    localStorageKey.STORAGE_KEY_BRANCHES,
-    {
-      defaultValue: {
-        localBranches: [],
-        remoteBranches: [],
-        currentBranch: null,
-      },
-    }
-  )
+const defaultBranchInfo: BranchInfo = {
+  localBranches: [],
+  remoteBranches: [],
+  currentBranch: null,
+}
 
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+const branchInfoAtom = atomWithStorage<BranchInfo>(
+  localStorageKey.STORAGE_KEY_BRANCHES,
+  defaultBranchInfo
+)
+const branchLoadingAtom = atom(false)
+const branchErrorAtom = atom<string | null>(null)
+
+export function useBranchStore() {
+  const [branchInfo, setBranchInfo] = useAtom(branchInfoAtom)
+  const [loading, setLoading] = useAtom(branchLoadingAtom)
+  const [error, setError] = useAtom(branchErrorAtom)
 
   // 获取分支信息
   const getBranch = async (repoPath: string, currentBranch?: string | null) => {
@@ -40,7 +43,6 @@ export function useBranchStore() {
         remoteBranches,
         currentBranch: currentBranch ?? null,
       }
-
       setBranchInfo(info)
       return info
     } catch (e) {
@@ -75,16 +77,12 @@ export function useBranchStore() {
 
   // 清除分支信息
   const clearBranch = () => {
-    setBranchInfo({
-      localBranches: [],
-      remoteBranches: [],
-      currentBranch: null,
-    })
+    setBranchInfo(defaultBranchInfo)
     setError(null)
   }
 
   return {
-    branchInfo: branchInfo ?? { localBranches: [], remoteBranches: [], currentBranch: null },
+    branchInfo,
     loading,
     error,
     getBranch,
