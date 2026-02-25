@@ -2,6 +2,7 @@ import { useThrottleFn } from "ahooks"
 import {
   forwardRef,
   type MouseEvent,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState
@@ -21,9 +22,19 @@ export interface ToolbarRef {
 
 interface ToolbarProps {
   options: ToolbarOption[]
+  contextMenuMode?: boolean
+  contextMenuVisible?: boolean
+  contextMenuPosition?: { x: number; y: number }
+  onContextMenuClose?: () => void
 }
 
-const Toolbar = forwardRef<ToolbarRef, ToolbarProps>(({ options }, ref) => {
+const Toolbar = forwardRef<ToolbarRef, ToolbarProps>(({
+  options,
+  contextMenuMode = false,
+  contextMenuVisible = false,
+  contextMenuPosition,
+  onContextMenuClose,
+}, ref) => {
   const [activeOption, setActiveOption] = useState<string>("")
   const [menuPositionLeft, setMenuPositionLeft] = useState(0)
 
@@ -32,8 +43,13 @@ const Toolbar = forwardRef<ToolbarRef, ToolbarProps>(({ options }, ref) => {
   activeOptionRef.current = activeOption
   isMenuOpenRef.current = activeOption !== ""
 
+  const closeMenu = () => {
+    setActiveOption("")
+    onContextMenuClose?.()
+  }
+
   useImperativeHandle(ref, () => ({
-    closeMenu: () => setActiveOption("")
+    closeMenu
   }))
 
   const isMenuOpen = activeOption !== ""
@@ -45,9 +61,19 @@ const Toolbar = forwardRef<ToolbarRef, ToolbarProps>(({ options }, ref) => {
 
   const toolbarRef = useClickOutside<HTMLDivElement>(() => {
     if (isMenuOpenRef.current) {
-      setActiveOption("")
+      closeMenu()
     }
   })
+
+  useEffect(() => {
+    if (!contextMenuMode) return
+    if (contextMenuVisible && options.length > 0) {
+      setActiveOption(options[0].type)
+      setMenuPositionLeft(0)
+      return
+    }
+    setActiveOption("")
+  }, [contextMenuMode, contextMenuVisible, options])
 
   const getOptionElement = (target: EventTarget): HTMLElement | null => {
     if (!(target instanceof HTMLElement)) return null
@@ -62,7 +88,7 @@ const Toolbar = forwardRef<ToolbarRef, ToolbarProps>(({ options }, ref) => {
     if (!isValidOptionType(type)) return
 
     if (type === activeOptionRef.current && isMenuOpenRef.current) {
-      setActiveOption("")
+      closeMenu()
       return
     }
 
@@ -94,32 +120,46 @@ const Toolbar = forwardRef<ToolbarRef, ToolbarProps>(({ options }, ref) => {
   const currentMenuItems = currentOption?.items
 
   return (
-    <div className={styles.container} ref={toolbarRef}>
-      <div
-        className={styles.options}
-        onClick={handleOptionsClick}
-        onMouseOver={ThrottleHandleOptionsEnter}
-        role="menubar"
-      >
-        {options.map((opt) => (
-          <div
-            key={opt.type}
-            className={cn(
-              styles.option,
-              activeOption === opt.type ? styles.active : ""
-            )}
-            data-type={opt.type}
-            role="menuitem"
-            aria-haspopup="true"
-          >
-            {opt.label}
-          </div>
-        ))}
-      </div>
+    <div
+      className={cn(styles.container, contextMenuMode ? styles.contextMenuContainer : "")}
+      ref={toolbarRef}
+      style={
+        contextMenuMode
+          ? {
+            left: contextMenuPosition?.x ?? 0,
+            top: contextMenuPosition?.y ?? 0,
+          }
+          : undefined
+      }
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {!contextMenuMode && (
+        <div
+          className={styles.options}
+          onClick={handleOptionsClick}
+          onMouseOver={ThrottleHandleOptionsEnter}
+          role="menubar"
+        >
+          {options.map((opt) => (
+            <div
+              key={opt.type}
+              className={cn(
+                styles.option,
+                activeOption === opt.type ? styles.active : ""
+              )}
+              data-type={opt.type}
+              role="menuitem"
+              aria-haspopup="true"
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
       {isMenuOpen && currentMenuItems && (
         <div
           className={styles.menu}
-          style={{ left: menuPositionLeft }}
+          style={contextMenuMode ? undefined : { left: menuPositionLeft }}
           role="menu"
         >
           {currentMenuItems.map((item) => (

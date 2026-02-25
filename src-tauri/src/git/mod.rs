@@ -3,7 +3,7 @@ mod branch;
 
 pub use repository::{get_repo,open_repo, RepoInfo};
 pub use branch::{
-    git_local_branches, git_remote_branches,
+    git_checkout_branch, git_local_branches, git_remote_branches,
 };
 
 use serde::Serialize;

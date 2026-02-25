@@ -52,6 +52,27 @@ export function useBranchStore() {
     }
   }
 
+  // 签出分支并刷新分支信息
+  const checkoutBranch = async (repoPath: string, branchName: string) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const checkedOutBranch = await invoke<string>("git_checkout_branch", {
+        repoPath,
+        branchName,
+      })
+      await getBranch(repoPath, checkedOutBranch)
+      return checkedOutBranch
+    } catch (e) {
+      console.error("签出分支出错:", e)
+      const message = e instanceof Error ? e.message : String(e)
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // 清除分支信息
   const clearBranch = () => {
     setBranchInfo({
@@ -67,6 +88,7 @@ export function useBranchStore() {
     loading,
     error,
     getBranch,
+    checkoutBranch,
     clearBranch,
   }
 }

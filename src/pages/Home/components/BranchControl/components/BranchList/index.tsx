@@ -1,5 +1,8 @@
-import { useState } from "react"
+import { useEffect, useState, type MouseEvent } from "react"
+import type { ToolbarOption } from "@/components/Toolbar"
+import Toolbar from "@/components/Toolbar"
 import { useBranchStore } from "@/stores/useBanchStore"
+import { useRepositoriesStore } from "@/stores/useRepositoriesStore"
 import styles from "./index.module.css"
 import arrowIcon from "./arrow.svg"
 import tagIcon from "./tag.svg"
@@ -55,9 +58,10 @@ interface TreeItemProps {
   depth: number
   selectedKey: string | null
   onSelect: (key: string) => void
+  onContextMenu: (event: MouseEvent<HTMLDivElement>, node: TreeNode) => void
 }
 
-const TreeItem = ({ node, depth, selectedKey, onSelect }: TreeItemProps) => {
+const TreeItem = ({ node, depth, selectedKey, onSelect, onContextMenu }: TreeItemProps) => {
   const [expanded, setExpanded] = useState(true)
   const hasChildren = node.children && node.children.length > 0
   const isSelected = node.key === selectedKey
@@ -77,6 +81,7 @@ const TreeItem = ({ node, depth, selectedKey, onSelect }: TreeItemProps) => {
         className={`${styles.treeNode} ${isSelected ? styles.active : ""}`}
         style={{ paddingLeft: depth * 16 }}
         onClick={handleClick}
+        onContextMenu={(event) => onContextMenu(event, node)}
         title={node.key}
       >
         {/* 展开/折叠箭头 */}
@@ -103,15 +108,68 @@ const TreeItem = ({ node, depth, selectedKey, onSelect }: TreeItemProps) => {
           depth={depth + 1}
           selectedKey={selectedKey}
           onSelect={onSelect}
+          onContextMenu={onContextMenu}
         />
       ))}
     </>
   )
 }
 
+interface ContextMenuState {
+  visible: boolean
+  x: number
+  y: number
+  node: TreeNode | null
+}
+
 const BranchList = () => {
-  const { branchInfo } = useBranchStore()
+  const { branchInfo, checkoutBranch } = useBranchStore()
+  const { currentRepo } = useRepositoriesStore()
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    visible: false,
+    x: 0,
+    y: 0,
+    node: null,
+  })
+
+  const closeContextMenu = () => {
+    setContextMenu((prev) => ({ ...prev, visible: false }))
+  }
+
+  const handleNodeContextMenu = (event: MouseEvent<HTMLDivElement>, node: TreeNode) => {
+    event.preventDefault()
+    setContextMenu({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      node,
+    })
+  }
+
+  const handleCheckout = async () => {
+    if (!contextMenu.node?.isBranch || !currentRepo?.path) {
+      closeContextMenu()
+      return
+    }
+
+    await checkoutBranch(currentRepo.path, contextMenu.node.key)
+    setSelectedKey(contextMenu.node.key)
+    closeContextMenu()
+  }
+
+  useEffect(() => {
+    const close = () => closeContextMenu()
+    window.addEventListener("pointerdown", close)
+    window.addEventListener("scroll", close, true)
+    window.addEventListener("keydown", close)
+
+    return () => {
+      window.removeEventListener("pointerdown", close)
+      window.removeEventListener("scroll", close, true)
+      window.removeEventListener("keydown", close)
+    }
+  }, [])
 
   const treeData: TreeNode[] = [
     {
@@ -126,6 +184,32 @@ const BranchList = () => {
     },
   ]
 
+  const contextMenuOptions: ToolbarOption[] = contextMenu.node
+    ? [
+      {
+        type: "branch-tree-context-menu",
+        label: "",
+        items: contextMenu.node.isBranch
+          ? [
+            {
+              id: "checkout-branch",
+              label: "签出",
+              action: () => {
+                void handleCheckout()
+              },
+            },
+          ]
+          : [
+            {
+              id: "context-empty",
+              label: "此处无任何内容",
+              children: [],
+            },
+          ],
+      },
+    ]
+    : []
+
   return (
     <div className={styles.container}>
       {treeData.map((node) => (
@@ -135,8 +219,18 @@ const BranchList = () => {
           depth={0}
           selectedKey={selectedKey}
           onSelect={setSelectedKey}
+          onContextMenu={handleNodeContextMenu}
         />
       ))}
+      {contextMenu.visible && contextMenu.node && (
+        <Toolbar
+          options={contextMenuOptions}
+          contextMenuMode
+          contextMenuVisible={contextMenu.visible}
+          contextMenuPosition={{ x: contextMenu.x, y: contextMenu.y }}
+          onContextMenuClose={closeContextMenu}
+        />
+      )}
     </div>
   )
 }
