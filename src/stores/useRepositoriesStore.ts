@@ -41,6 +41,9 @@ export function useRepositoriesStore() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { getBranch, clearBranch } = useBranchStore()
+  const visibleRecentRepos = (recentRepos ?? []).filter(
+    (repo) => repo.path !== currentRepo?.path
+  )
 
   const openRepo = async () => {
     console.log("1. openRepo 开始执行") // 👈 加这里
@@ -152,7 +155,7 @@ export function useRepositoriesStore() {
   return {
     // 状态
     currentRepo,
-    recentRepos: recentRepos ?? [],
+    recentRepos: visibleRecentRepos,
     loading,
     error,
 
