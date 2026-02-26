@@ -1,0 +1,65 @@
+.host {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.card {
+  max-width: 320px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color-3);
+  background: var(--background-12);
+  box-shadow: 0 6px 22px rgb(0 0 0 / 30%);
+  padding: 10px 12px;
+  pointer-events: auto;
+}
+
+.main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.typeIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.textWrap {
+  min-width: 0;
+  flex: 1;
+}
+
+.content {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.info {
+  background: url("../../assets/icon/info.svg") center / cover no-repeat;
+}
+
+.warning {
+  background: url("../../assets/icon/warning.svg") center / cover no-repeat;
+}
+
+.error {
+  background: url("../../assets/icon/error.svg") center / cover no-repeat;
+}
+
+.custom {
+  pointer-events: auto;
+}

@@ -5,4 +5,6 @@ export const localStorageKey = {
   STORAGE_KEY_CURRENT_REPO: "tauri-taro-git:current-repo",
   // 分支信息
   STORAGE_KEY_BRANCHES: "tauri-taro-git:branches",
+  // 通知历史
+  STORAGE_KEY_NOTIFICATIONS: "tauri-taro-git:notifications",
 }

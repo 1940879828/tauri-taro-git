@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core"
 import { atom, useAtom } from "jotai"
 import { atomWithStorage } from "jotai/utils"
 import { localStorageKey } from "@/constant/localStorageKey"
+import { pushGlobalNotice } from "@/stores/useNotificationStore"
 
 export interface BranchInfo {
   localBranches: string[]
@@ -53,6 +54,11 @@ export function useBranchStore() {
       console.error("获取分支信息出错:", e)
       const message = e instanceof Error ? e.message : String(e)
       setError(message)
+      pushGlobalNotice({
+        type: "error",
+        title: "获取分支信息失败",
+        content: message,
+      })
     } finally {
       setLoading(false)
     }
@@ -73,11 +79,20 @@ export function useBranchStore() {
       const repoInfo = await invoke<RepoInfo>("git_open", { repoPath })
       const currentBranch = repoInfo.current_branch ?? null
       await getBranch(repoPath, currentBranch)
+      pushGlobalNotice({
+        type: "info",
+        title: `已切换到分支 ${currentBranch ?? branchName}`,
+      })
       return currentBranch ?? branchName
     } catch (e) {
       console.error("签出分支出错:", e)
       const message = e instanceof Error ? e.message : String(e)
       setError(message)
+      pushGlobalNotice({
+        type: "error",
+        title: `切换分支失败: ${branchName}`,
+        content: message,
+      })
     } finally {
       setLoading(false)
     }

@@ -1,0 +1,16 @@
+.container {
+  height: 100%;
+  position: relative;
+}
+
+.rightWorkspace {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  min-width: 0;
+}
+
+.rightEditor {
+  flex: 1;
+  min-width: 0;
+}
