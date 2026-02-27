@@ -14,6 +14,13 @@ interface RepoInfo {
   current_branch: string | null
 }
 
+interface CreateBranchParams {
+  fromBranch: string
+  branchName: string
+  force: boolean
+  checkout: boolean
+}
+
 const defaultBranchInfo: BranchInfo = {
   localBranches: [],
   remoteBranches: [],
@@ -98,6 +105,44 @@ export function useBranchStore() {
     }
   }
 
+  // 创建分支（可覆盖、可选签出）并刷新分支信息
+  const createBranch = async (repoPath: string, params: CreateBranchParams) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const { fromBranch, branchName, force, checkout } = params
+      await invoke<string>("git_create_branch", {
+        repoPath,
+        fromBranch,
+        branchName,
+        force,
+        checkout,
+      })
+
+      const repoInfo = await invoke<RepoInfo>("git_open", { repoPath })
+      const currentBranch = repoInfo.current_branch ?? null
+      await getBranch(repoPath, currentBranch)
+
+      pushGlobalNotice({
+        type: "info",
+        title: checkout ? `已创建并签出分支 ${branchName}` : `已创建分支 ${branchName}`,
+      })
+      return branchName
+    } catch (e) {
+      console.error("创建分支出错:", e)
+      const message = e instanceof Error ? e.message : String(e)
+      setError(message)
+      pushGlobalNotice({
+        type: "error",
+        title: `创建分支失败: ${params.branchName}`,
+        content: message,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // 清除分支信息
   const clearBranch = () => {
     setBranchInfo(defaultBranchInfo)
@@ -110,6 +155,7 @@ export function useBranchStore() {
     error,
     getBranch,
     checkoutBranch,
+    createBranch,
     clearBranch,
   }
 }

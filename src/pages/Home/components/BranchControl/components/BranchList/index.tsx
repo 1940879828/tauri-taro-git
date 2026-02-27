@@ -122,8 +122,17 @@ interface ContextMenuState {
   node: TreeNode | null
 }
 
+interface CreateBranchDialogState {
+  visible: boolean
+  fromBranch: string
+  branchName: string
+  checkout: boolean
+  force: boolean
+  errorMessage: string | null
+}
+
 const BranchList = () => {
-  const { branchInfo, checkoutBranch } = useBranchStore()
+  const { branchInfo, checkoutBranch, createBranch } = useBranchStore()
   const { currentRepo } = useRepositoriesStore()
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -131,6 +140,14 @@ const BranchList = () => {
     x: 0,
     y: 0,
     node: null,
+  })
+  const [createBranchDialog, setCreateBranchDialog] = useState<CreateBranchDialogState>({
+    visible: false,
+    fromBranch: "",
+    branchName: "",
+    checkout: true,
+    force: false,
+    errorMessage: null,
   })
 
   const closeContextMenu = () => {
@@ -157,6 +174,72 @@ const BranchList = () => {
     await checkoutBranch(currentRepo.path, contextMenu.node.key)
     setSelectedKey(contextMenu.node.key)
     closeContextMenu()
+  }
+
+  const openCreateBranchDialog = () => {
+    if (!contextMenu.node?.isBranch) {
+      closeContextMenu()
+      return
+    }
+
+    const fromBranch = contextMenu.node.key
+    setCreateBranchDialog({
+      visible: true,
+      fromBranch,
+      branchName: fromBranch,
+      checkout: true,
+      force: false,
+      errorMessage: null,
+    })
+    closeContextMenu()
+  }
+
+  const closeCreateBranchDialog = () => {
+    setCreateBranchDialog((prev) => ({
+      ...prev,
+      visible: false,
+      errorMessage: null,
+    }))
+  }
+
+  const branchName = createBranchDialog.branchName.trim()
+  const isBranchNameDuplicated = branchName.length > 0 && branchInfo.localBranches.includes(branchName)
+
+  const handleCreateBranchSubmit = async () => {
+    if (!currentRepo?.path) {
+      closeCreateBranchDialog()
+      return
+    }
+
+    if (!branchName) {
+      setCreateBranchDialog((prev) => ({
+        ...prev,
+        errorMessage: "分支名称不能为空",
+      }))
+      return
+    }
+
+    if (isBranchNameDuplicated && !createBranchDialog.force) {
+      setCreateBranchDialog((prev) => ({
+        ...prev,
+        errorMessage: `分支名称 ${branchName} 已存在! 更改名称或覆盖现有分支`,
+      }))
+      return
+    }
+
+    const createdBranch = await createBranch(currentRepo.path, {
+      fromBranch: createBranchDialog.fromBranch,
+      branchName,
+      checkout: createBranchDialog.checkout,
+      force: createBranchDialog.force,
+    })
+
+    if (!createdBranch) return
+
+    if (createBranchDialog.checkout) {
+      setSelectedKey(branchName)
+    }
+    closeCreateBranchDialog()
   }
 
   useEffect(() => {
@@ -197,6 +280,13 @@ const BranchList = () => {
                 void handleCheckout()
               },
             },
+            {
+              id: "create-branch",
+              label: `从'${contextMenu.node.key}'新建分支...`,
+              action: () => {
+                openCreateBranchDialog()
+              },
+            }
           ]
           : [
             {
@@ -229,6 +319,71 @@ const BranchList = () => {
           contextMenuPosition={{ x: contextMenu.x, y: contextMenu.y }}
           onContextMenuClose={closeContextMenu}
         />
+      )}
+      {createBranchDialog.visible && (
+        <div className={styles.dialogOverlay} onClick={closeCreateBranchDialog}>
+          <div className={styles.dialog} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.dialogTitle}>
+              从 {createBranchDialog.fromBranch} 创建分支
+            </div>
+            {createBranchDialog.errorMessage && (
+              <div className={styles.dialogError}>{createBranchDialog.errorMessage}</div>
+            )}
+            <label className={styles.dialogLabel} htmlFor="create-branch-input">分支名称:</label>
+            <input
+              id="create-branch-input"
+              className={styles.dialogInput}
+              value={createBranchDialog.branchName}
+              onChange={(event) => {
+                const nextBranchName = event.target.value
+                const duplicated = branchInfo.localBranches.includes(nextBranchName.trim())
+                setCreateBranchDialog((prev) => ({
+                  ...prev,
+                  branchName: nextBranchName,
+                  force: duplicated ? prev.force : false,
+                  errorMessage: null,
+                }))
+              }}
+            />
+
+            <label className={styles.dialogCheckbox}>
+              <input
+                type="checkbox"
+                checked={createBranchDialog.checkout}
+                onChange={(event) => {
+                  setCreateBranchDialog((prev) => ({
+                    ...prev,
+                    checkout: event.target.checked,
+                  }))
+                }}
+              />
+              <span>签出分支(C)</span>
+            </label>
+            <label className={styles.dialogCheckbox}>
+              <input
+                type="checkbox"
+                checked={createBranchDialog.force}
+                disabled={!isBranchNameDuplicated}
+                onChange={(event) => {
+                  setCreateBranchDialog((prev) => ({
+                    ...prev,
+                    force: event.target.checked,
+                  }))
+                }}
+              />
+              <span>覆盖现有分支(R)</span>
+            </label>
+
+            <div className={styles.dialogActions}>
+              <button type="button" className={styles.dialogCreateButton} onClick={() => void handleCreateBranchSubmit()}>
+                创建
+              </button>
+              <button type="button" className={styles.dialogCancelButton} onClick={closeCreateBranchDialog}>
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

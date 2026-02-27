@@ -81,3 +81,49 @@ pub fn git_checkout_branch(repo_path: &str, branch_name: &str) -> Result<String,
         message: format!("分支不存在: {}", branch_name),
     })
 }
+
+fn resolve_branch_commit<'repo>(
+    repo: &'repo git2::Repository,
+    branch_name: &str,
+) -> Result<git2::Commit<'repo>, GitError> {
+    if repo.find_branch(branch_name, BranchType::Local).is_ok() {
+        let local_ref = format!("refs/heads/{}", branch_name);
+        let reference = repo.find_reference(&local_ref)?;
+        return Ok(reference.peel_to_commit()?);
+    }
+
+    if repo.find_branch(branch_name, BranchType::Remote).is_ok() {
+        let remote_ref = format!("refs/remotes/{}", branch_name);
+        let reference = repo.find_reference(&remote_ref)?;
+        return Ok(reference.peel_to_commit()?);
+    }
+
+    if let Ok(object) = repo.revparse_single(branch_name) {
+        return Ok(object.peel_to_commit()?);
+    }
+
+    Err(GitError {
+        message: format!("来源分支不存在: {}", branch_name),
+    })
+}
+
+/// 从指定分支创建新分支：
+/// - force = true：若本地同名分支存在则覆盖
+/// - checkout = true：创建后自动签出到新分支
+pub fn git_create_branch(
+    repo_path: &str,
+    from_branch: &str,
+    branch_name: &str,
+    force: bool,
+    checkout: bool,
+) -> Result<String, GitError> {
+    let repo = get_repo(repo_path)?;
+    let commit = resolve_branch_commit(&repo, from_branch)?;
+    repo.branch(branch_name, &commit, force)?;
+
+    if checkout {
+        checkout_local_branch(&repo, branch_name)?;
+    }
+
+    Ok(branch_name.to_string())
+}

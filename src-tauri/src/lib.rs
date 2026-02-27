@@ -6,6 +6,7 @@ use git::{
   git_local_branches as do_git_local_branches,
   git_remote_branches as do_git_remote_branches,
   git_checkout_branch as do_git_checkout_branch,
+  git_create_branch as do_git_create_branch,
 };
 
 #[tauri::command]
@@ -28,6 +29,17 @@ fn git_checkout_branch(repo_path: String, branch_name: String) -> Result<String,
   do_git_checkout_branch(&repo_path, &branch_name)
 }
 
+#[tauri::command]
+fn git_create_branch(
+  repo_path: String,
+  from_branch: String,
+  branch_name: String,
+  force: bool,
+  checkout: bool,
+) -> Result<String, git::GitError> {
+  do_git_create_branch(&repo_path, &from_branch, &branch_name, force, checkout)
+}
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -39,6 +51,7 @@ pub fn run() {
       git_branches_local,
       git_branches_remote,
       git_checkout_branch,
+      git_create_branch,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
