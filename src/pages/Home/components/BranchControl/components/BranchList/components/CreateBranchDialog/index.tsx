@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom"
 import type { Dispatch, SetStateAction } from "react"
 import styles from "./index.module.css"
 
@@ -29,8 +30,14 @@ const CreateBranchDialog = ({
 }: CreateBranchDialogProps) => {
   if (!dialog.visible) return null
 
-  return (
-    <div className={styles.dialogOverlay}>
+  const dialogNode = (
+    <div
+      className={styles.dialogOverlay}
+      onMouseDown={(event) => {
+        event.stopPropagation()
+      }}
+      onClick={onClose}
+    >
       <div className={styles.dialog} onClick={(event) => event.stopPropagation()}>
         <div className={styles.dialogTitle}>
           从 {dialog.fromBranch} 创建分支
@@ -103,6 +110,8 @@ const CreateBranchDialog = ({
       </div>
     </div>
   )
+
+  return createPortal(dialogNode, document.body)
 }
 
 export default CreateBranchDialog
