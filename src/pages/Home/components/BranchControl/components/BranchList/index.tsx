@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from "react"
+import { useEffect, useRef, useState, type MouseEvent } from "react"
 import type { ToolbarOption } from "@/components/Toolbar"
 import Toolbar from "@/components/Toolbar"
 import { useBranchStore } from "@/stores/useBanchStore"
@@ -131,10 +131,20 @@ interface CreateBranchDialogState {
   errorMessage: string | null
 }
 
-const BranchList = () => {
+interface BranchListProps {
+  selectedBranchKey: string | null
+  onSelectedBranchKeyChange: (key: string | null) => void
+  createBranchSignal: number
+}
+
+const BranchList = ({
+  selectedBranchKey,
+  onSelectedBranchKeyChange,
+  createBranchSignal,
+}: BranchListProps) => {
   const { branchInfo, checkoutBranch, createBranch } = useBranchStore()
   const { currentRepo } = useRepositoriesStore()
-  const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const lastHandledCreateBranchSignalRef = useRef(0)
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     visible: false,
     x: 0,
@@ -172,17 +182,12 @@ const BranchList = () => {
     }
 
     await checkoutBranch(currentRepo.path, contextMenu.node.key)
-    setSelectedKey(contextMenu.node.key)
+    onSelectedBranchKeyChange(contextMenu.node.key)
     closeContextMenu()
   }
 
-  const openCreateBranchDialog = () => {
-    if (!contextMenu.node?.isBranch) {
-      closeContextMenu()
-      return
-    }
-
-    const fromBranch = contextMenu.node.key
+  const openCreateBranchDialogFromBranch = (fromBranch: string) => {
+    onSelectedBranchKeyChange(fromBranch)
     setCreateBranchDialog({
       visible: true,
       fromBranch,
@@ -191,6 +196,15 @@ const BranchList = () => {
       force: false,
       errorMessage: null,
     })
+  }
+
+  const openCreateBranchDialog = () => {
+    if (!contextMenu.node?.isBranch) {
+      closeContextMenu()
+      return
+    }
+
+    openCreateBranchDialogFromBranch(contextMenu.node.key)
     closeContextMenu()
   }
 
@@ -237,7 +251,7 @@ const BranchList = () => {
     if (!createdBranch) return
 
     if (createBranchDialog.checkout) {
-      setSelectedKey(branchName)
+      onSelectedBranchKeyChange(branchName)
     }
     closeCreateBranchDialog()
   }
@@ -252,6 +266,13 @@ const BranchList = () => {
       window.removeEventListener("keydown", close)
     }
   }, [])
+
+  useEffect(() => {
+    if (!createBranchSignal || createBranchSignal === lastHandledCreateBranchSignalRef.current) return
+    lastHandledCreateBranchSignalRef.current = createBranchSignal
+    if (!selectedBranchKey) return
+    openCreateBranchDialogFromBranch(selectedBranchKey)
+  }, [createBranchSignal, selectedBranchKey])
 
   const treeData: TreeNode[] = [
     {
@@ -306,8 +327,8 @@ const BranchList = () => {
           key={node.key}
           node={node}
           depth={0}
-          selectedKey={selectedKey}
-          onSelect={setSelectedKey}
+          selectedKey={selectedBranchKey}
+          onSelect={onSelectedBranchKeyChange}
           onContextMenu={handleNodeContextMenu}
         />
       ))}

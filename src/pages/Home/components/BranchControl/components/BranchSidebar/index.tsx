@@ -56,12 +56,22 @@ export const defaultSidebarItems: SidebarItem[] = [
 
 interface BranchSidebarProps {
   onOptionClick: (key: string) => void
+  hasSelectedBranch: boolean
 }
 
-const BranchSidebar = ({ onOptionClick }: BranchSidebarProps) => {
+const BranchSidebar = ({ onOptionClick, hasSelectedBranch }: BranchSidebarProps) => {
+  const sidebarItems = defaultSidebarItems.map((item) => {
+    if (item.key !== "add") return item
+
+    return {
+      ...item,
+      disabled: !hasSelectedBranch,
+    }
+  })
+
   return (
     <div className={styles.container}>
-      {defaultSidebarItems.map((item) => (
+      {sidebarItems.map((item) => (
         <div
           key={item.key}
           className={`${styles.item} ${item.disabled ? styles.disabled : ""}`}
