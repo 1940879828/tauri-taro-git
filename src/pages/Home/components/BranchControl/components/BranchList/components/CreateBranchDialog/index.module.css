@@ -1,0 +1,140 @@
+.dialogOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .dialog {
+    width: 360px;
+    padding: 16px;
+    padding-top: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color-4);
+    background-color: var(--background-1);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+    position: relative;
+  }
+  
+  .dialogTitle {
+    margin-bottom: 12px;
+    font-size: 12px;
+  }
+
+  .closeButton {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 14px;
+    height: 14px;
+    background: url("../../../../../../../../assets/icon/close.svg") center/cover no-repeat;
+    cursor: pointer;
+  }
+  
+  .dialogError {
+    margin-bottom: 10px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid #a24f4f;
+    background-color: #4f2a2a;
+    color: #f2c9c9;
+    font-size: 12px;
+  }
+  
+  .dialogInputContainer {
+    display: flex;
+    align-items: center;
+  }
+
+  .dialogLabel {
+    min-width: 55px;
+    margin-bottom: 6px;
+    color: var(--text-color-2);
+  }
+  
+  .dialogInput {
+    width: 100%;
+    height: 22px;
+    margin-bottom: 10px;
+    padding: 0 8px;
+    border: 1px solid var(--border-color-5);
+    border-radius: 0;
+    background-color: var(--background-11);
+    color: var(--text-color);
+    outline: none;
+    line-height: 1;
+  }
+  
+  .dialogInput:focus {
+    border-color: var(--border-color-6);
+    outline: 2px solid var(--border-color-7);
+  }
+  
+  .dialogCheckboxContainer {
+    display: flex;
+    margin-left: 55px;
+    gap: 16px;
+  }
+
+  .dialogCheckbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: var(--text-color);
+  }
+
+  .dialogCheckboxInput {
+    appearance: none;
+    position: relative;
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--background-13);
+    border: 1px solid var(--border-color-8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dialogCheckboxInput:checked::after {
+    content: "";
+    width: 14px;
+    height: 14px;
+    background: url("../../../../../../../../assets/icon/check.svg") center/cover no-repeat;
+  }
+
+  .dialogCheckbox input:disabled + span {
+    opacity: 0.5;
+  }
+  
+  .dialogActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  
+  .dialogCreateButton,
+  .dialogCancelButton {
+    min-width: 64px;
+    height: 24px;
+    padding: 0 12px;
+    border: 1px solid var(--border-color-2);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .dialogCreateButton {
+    border-color: var(--border-color-9);
+    background-color: var(--background-14);
+    font-weight: 500;
+  }
+  
+  .dialogCancelButton {
+    border-color: var(--border-color-10);
+    background-color: var(--background-7);
+  }
+  

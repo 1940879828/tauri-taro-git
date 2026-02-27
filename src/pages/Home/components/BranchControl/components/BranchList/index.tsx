@@ -4,6 +4,7 @@ import Toolbar from "@/components/Toolbar"
 import { useBranchStore } from "@/stores/useBanchStore"
 import { useRepositoriesStore } from "@/stores/useRepositoriesStore"
 import styles from "./index.module.css"
+import CreateBranchDialog, { type CreateBranchDialogState } from "./components/CreateBranchDialog"
 import arrowIcon from "./arrow.svg"
 import tagIcon from "./tag.svg"
 import branchIcon from "./branch.svg"
@@ -120,15 +121,6 @@ interface ContextMenuState {
   x: number
   y: number
   node: TreeNode | null
-}
-
-interface CreateBranchDialogState {
-  visible: boolean
-  fromBranch: string
-  branchName: string
-  checkout: boolean
-  force: boolean
-  errorMessage: string | null
 }
 
 interface BranchListProps {
@@ -341,71 +333,14 @@ const BranchList = ({
           onContextMenuClose={closeContextMenu}
         />
       )}
-      {createBranchDialog.visible && (
-        <div className={styles.dialogOverlay} onClick={closeCreateBranchDialog}>
-          <div className={styles.dialog} onClick={(event) => event.stopPropagation()}>
-            <div className={styles.dialogTitle}>
-              从 {createBranchDialog.fromBranch} 创建分支
-            </div>
-            {createBranchDialog.errorMessage && (
-              <div className={styles.dialogError}>{createBranchDialog.errorMessage}</div>
-            )}
-            <label className={styles.dialogLabel} htmlFor="create-branch-input">分支名称:</label>
-            <input
-              id="create-branch-input"
-              className={styles.dialogInput}
-              value={createBranchDialog.branchName}
-              onChange={(event) => {
-                const nextBranchName = event.target.value
-                const duplicated = branchInfo.localBranches.includes(nextBranchName.trim())
-                setCreateBranchDialog((prev) => ({
-                  ...prev,
-                  branchName: nextBranchName,
-                  force: duplicated ? prev.force : false,
-                  errorMessage: null,
-                }))
-              }}
-            />
-
-            <label className={styles.dialogCheckbox}>
-              <input
-                type="checkbox"
-                checked={createBranchDialog.checkout}
-                onChange={(event) => {
-                  setCreateBranchDialog((prev) => ({
-                    ...prev,
-                    checkout: event.target.checked,
-                  }))
-                }}
-              />
-              <span>签出分支(C)</span>
-            </label>
-            <label className={styles.dialogCheckbox}>
-              <input
-                type="checkbox"
-                checked={createBranchDialog.force}
-                disabled={!isBranchNameDuplicated}
-                onChange={(event) => {
-                  setCreateBranchDialog((prev) => ({
-                    ...prev,
-                    force: event.target.checked,
-                  }))
-                }}
-              />
-              <span>覆盖现有分支(R)</span>
-            </label>
-
-            <div className={styles.dialogActions}>
-              <button type="button" className={styles.dialogCreateButton} onClick={() => void handleCreateBranchSubmit()}>
-                创建
-              </button>
-              <button type="button" className={styles.dialogCancelButton} onClick={closeCreateBranchDialog}>
-                取消
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreateBranchDialog
+        dialog={createBranchDialog}
+        localBranches={branchInfo.localBranches}
+        isBranchNameDuplicated={isBranchNameDuplicated}
+        onClose={closeCreateBranchDialog}
+        onSubmit={() => void handleCreateBranchSubmit()}
+        setDialog={setCreateBranchDialog}
+      />
     </div>
   )
 }
